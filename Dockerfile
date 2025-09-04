@@ -1,18 +1,24 @@
-# MCP server Dockerfile for Claude Desktop integration
-FROM ghcr.io/astral-sh/uv:0.6.6-python3.13-bookworm
+# Install uv
+FROM python:3.12-slim
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
-# Set working directory
+# Change the working directory to the `app` directory
 WORKDIR /app
 
-# Copy project files
-COPY . .
+# Install dependencies
+RUN --mount=type=cache,target=/root/.cache/uv \
+    --mount=type=bind,source=uv.lock,target=uv.lock \
+    --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
+    uv sync --locked --no-install-project
 
-# Set environment for MCP communication
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
+# Copy the project into the image
+ADD pyproject.toml uv.lock README.md /app/
+ADD app/ /app/app
 
-# Install package with UV (using --system flag)
-RUN uv pip install --system -e .
+# Sync the project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --locked
 
-# Run the MCP server with stdio communication using the module directly
-ENTRYPOINT ["python", "-m", "app"]
+EXPOSE 8000
+
+CMD ["uv", "run", "fastmcp", "run", "app/run.py", "--transport", "http"]

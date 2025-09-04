@@ -1,8 +1,13 @@
 import functools
 import logging
 import json
-import httpx
+import os
+
 from typing import List, Dict, Any, Optional, Callable, Awaitable, TypeVar, cast
+
+from fastmcp.server.auth import StaticTokenVerifier
+
+from app.config import FASTMCP_BEARER_TOKEN
 
 # Set up logging
 logging.basicConfig(
@@ -25,10 +30,22 @@ from app.hass import (
 T = TypeVar('T')
 
 # Create an MCP server
-from mcp.server.fastmcp import FastMCP, Context, Image
-from mcp.server.stdio import stdio_server
-import mcp.types as types
-mcp = FastMCP("Hass-MCP")
+from fastmcp import FastMCP
+
+verifier = None
+if FASTMCP_BEARER_TOKEN:
+    verifier = StaticTokenVerifier(
+        tokens={
+            os.environ['FASTMCP_BEARER_TOKEN']: {
+                "client_id": "guest-user",
+                "scopes": ["read:data"]
+            }
+        },
+        required_scopes=["read:data"]
+    )
+
+
+mcp = FastMCP("Hass-MCP", auth=verifier if verifier else None)
 
 def async_handler(command_type: str):
     """

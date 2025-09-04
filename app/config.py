@@ -4,6 +4,7 @@ from typing import Optional
 # Home Assistant configuration
 HA_URL: str = os.environ.get("HA_URL", "http://localhost:8123")
 HA_TOKEN: str = os.environ.get("HA_TOKEN", "")
+FASTMCP_BEARER_TOKEN: Optional[str] = os.environ.get("FASTMCP_BEARER_TOKEN", None)
 
 def get_ha_headers() -> dict:
     """Return the headers needed for Home Assistant API requests"""
